@@ -8,6 +8,8 @@ import '../services/visit_service.dart';
 import 'patient_search_page.dart';
 import 'daily_report_page.dart';
 import 'trends_page.dart';
+import 'account_page.dart';
+import 'user_management_page.dart';
 
 class DashboardPage extends StatefulWidget {
   final String role;
@@ -25,13 +27,15 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _loading = true;
   DailyReport? _today;
 
+  // ✅ bool GETTERS (not functions) so `if (_canManageUsers)` works
+  bool get _canCloseAll => widget.role == 'admin' || widget.role == 'reception';
+  bool get _canManageUsers => widget.role == 'ceo' || widget.role == 'admin';
+
   @override
   void initState() {
     super.initState();
     _loadToday();
   }
-
-  bool _canCloseAll() => widget.role == 'admin' || widget.role == 'reception';
 
   Future<void> _loadToday() async {
     setState(() => _loading = true);
@@ -90,10 +94,12 @@ class _DashboardPageState extends State<DashboardPage> {
       final closedCount = await _visits.closeAllOpenVisitsForDate(
         dateKey: todayKey,
         updatedByUid: user.uid,
+        updatedByEmail: user.email ?? '',
+        updatedByRole: widget.role,
       );
 
       if (!mounted) return;
-      Navigator.pop(context); // close loader
+      Navigator.pop(context);
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Closed $closedCount open visit(s) for $todayKey.')),
@@ -102,7 +108,8 @@ class _DashboardPageState extends State<DashboardPage> {
       await _loadToday();
     } catch (e) {
       if (!mounted) return;
-      Navigator.pop(context); // close loader
+      Navigator.pop(context);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Failed to close visits: $e')),
       );
@@ -133,6 +140,29 @@ class _DashboardPageState extends State<DashboardPage> {
       appBar: AppBar(
         title: Text('Dashboard • $todayKey'),
         actions: [
+          if (_canManageUsers)
+            IconButton(
+              tooltip: 'Users',
+              icon: const Icon(Icons.group),
+              onPressed: () async {
+                await Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => UserManagementPage(currentRole: widget.role),
+                  ),
+                );
+              },
+            ),
+          IconButton(
+            tooltip: 'Account',
+            icon: const Icon(Icons.person),
+            onPressed: () async {
+              await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => AccountPage(role: widget.role)),
+              );
+            },
+          ),
           IconButton(
             tooltip: 'Refresh',
             onPressed: _loadToday,
@@ -160,7 +190,6 @@ class _DashboardPageState extends State<DashboardPage> {
               ),
             ),
             const SizedBox(height: 10),
-
             Wrap(
               runSpacing: 10,
               spacing: 10,
@@ -175,9 +204,7 @@ class _DashboardPageState extends State<DashboardPage> {
                 SizedBox(width: 220, child: _statCard('Grand total', '${_today!.grandTotal}')),
               ],
             ),
-
             const SizedBox(height: 12),
-
             Row(
               children: [
                 Expanded(
@@ -222,10 +249,8 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ],
             ),
-
             const SizedBox(height: 12),
-
-            if (_canCloseAll())
+            if (_canCloseAll)
               SizedBox(
                 width: double.infinity,
                 child: FilledButton.icon(
@@ -234,10 +259,8 @@ class _DashboardPageState extends State<DashboardPage> {
                   onPressed: _closeAllOpenToday,
                 ),
               ),
-
-            if (_canCloseAll()) const SizedBox(height: 8),
-
-            if (_canCloseAll())
+            if (_canCloseAll) const SizedBox(height: 8),
+            if (_canCloseAll)
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(12),

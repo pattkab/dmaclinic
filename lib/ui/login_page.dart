@@ -25,22 +25,35 @@ class _LoginPageState extends State<LoginPage> {
   }
 
   Future<void> _loadLastEmail() async {
-    final prefs = await SharedPreferences.getInstance();
-    final last = prefs.getString('last_email');
-    if (last != null && last.trim().isNotEmpty) {
-      _email.text = last.trim();
-      setState(() {}); // refresh UI just in case
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final last = prefs.getString('last_email');
+      if (last != null && last.trim().isNotEmpty) {
+        _email.text = last.trim();
+        if (mounted) setState(() {});
+      }
+    } catch (_) {
+      // If plugin isn't registered yet (e.g., first run after adding deps),
+      // don't block login. Email prefill is best-effort.
     }
   }
 
   Future<void> _saveLastEmail(String email) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString('last_email', email.trim());
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setString('last_email', email.trim());
+    } catch (_) {
+      // Best-effort only; do not block login.
+    }
   }
 
   Future<void> _clearLastEmail() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove('last_email');
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.remove('last_email');
+    } catch (_) {
+      // ignore
+    }
     _email.clear();
     if (mounted) setState(() {});
   }
@@ -67,7 +80,7 @@ class _LoginPageState extends State<LoginPage> {
     });
 
     try {
-      // ✅ Save BEFORE sign-in so it never gets skipped on auth state rebuild
+      // Save BEFORE sign-in (best effort)
       await _saveLastEmail(email);
 
       await _auth.signInEmail(email, password);

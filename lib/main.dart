@@ -49,8 +49,6 @@ class AuthGate extends StatelessWidget {
 
         if (user == null) return const LoginPage();
 
-        // Stream the user role doc so it never "hangs" like a Future can,
-        // and show meaningful errors if rules block it.
         return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
           builder: (context, roleSnap) {
@@ -65,7 +63,7 @@ class AuthGate extends StatelessWidget {
                   child: Padding(
                     padding: const EdgeInsets.all(16),
                     child: Text(
-                      'Failed to load your role from Firestore.\n\n'
+                      'Failed to load your profile from Firestore.\n\n'
                           'Error:\n${roleSnap.error}\n\n'
                           'Check Firestore rules and that users/{uid} exists.',
                       textAlign: TextAlign.center,
@@ -76,7 +74,69 @@ class AuthGate extends StatelessWidget {
             }
 
             final data = roleSnap.data?.data();
-            final role = (data?['role'] as String?) ?? 'reception';
+            if (data == null) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('DMA Clinic')),
+                body: Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(16),
+                    child: Text(
+                      'Your user profile was not found.\n\n'
+                          'Ask the admin to create users/${user.uid} in Firestore.',
+                      textAlign: TextAlign.center,
+                    ),
+                  ),
+                ),
+              );
+            }
+
+            final active = (data['active'] as bool?) ?? true;
+            final role = (data['role'] as String?) ?? 'reception';
+
+            // ✅ Active enforcement
+            if (!active) {
+              return Scaffold(
+                appBar: AppBar(title: const Text('DMA Clinic')),
+                body: Center(
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 520),
+                    child: Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Card(
+                        child: Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              const Icon(Icons.block, size: 48),
+                              const SizedBox(height: 10),
+                              const Text(
+                                'Account Disabled',
+                                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                'This account has been disabled by an administrator.\n\n'
+                                    'Email: ${user.email ?? ''}',
+                                textAlign: TextAlign.center,
+                              ),
+                              const SizedBox(height: 14),
+                              FilledButton.icon(
+                                icon: const Icon(Icons.logout),
+                                label: const Text('Logout'),
+                                onPressed: () async {
+                                  await auth.signOut();
+                                },
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+              );
+            }
 
             return DashboardPage(role: role);
           },

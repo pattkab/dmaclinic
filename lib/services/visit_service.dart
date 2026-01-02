@@ -14,12 +14,16 @@ class VisitService {
     required String visitId,
     required String uid,
     required String action,
+    String? email,
+    String? role,
     Map<String, dynamic>? changes,
     Map<String, dynamic>? meta,
   }) async {
     await _auditRef(visitId).add({
       'ts': FieldValue.serverTimestamp(),
       'uid': uid,
+      if (email != null) 'email': email,
+      if (role != null) 'role': role,
       'action': action,
       if (changes != null) 'changes': changes,
       if (meta != null) 'meta': meta,
@@ -29,6 +33,8 @@ class VisitService {
   Future<Visit> openOrCreateTodayVisit({
     required String patientId,
     required String updatedByUid,
+    String? updatedByEmail,
+    String? updatedByRole,
   }) async {
     final today = DateUtilsX.todayKey();
     final docId = IdUtils.visitDocId(patientId, today);
@@ -60,6 +66,8 @@ class VisitService {
     await _logAudit(
       visitId: docId,
       uid: updatedByUid,
+      email: updatedByEmail,
+      role: updatedByRole,
       action: 'create_visit',
       meta: {'visitDate': today},
     );
@@ -74,10 +82,12 @@ class VisitService {
     int? pharmacyFee,
     int? proceduresFee,
     required String updatedByUid,
+    String? updatedByEmail,
+    String? updatedByRole,
   }) async {
     final ref = _db.collection('visits').doc(visitId);
 
-    // Read current first (so we can store old->new changes)
+    // Read current first (to capture old->new)
     final snap = await ref.get();
     if (!snap.exists) return;
 
@@ -114,15 +124,15 @@ class VisitService {
       changes['proceduresFee'] = {'old': oldProc, 'new': proceduresFee};
     }
 
-    // Nothing changed
     if (changes.isEmpty) return;
 
-    // Write visit update then audit log
     await ref.update(updates);
 
     await _logAudit(
       visitId: visitId,
       uid: updatedByUid,
+      email: updatedByEmail,
+      role: updatedByRole,
       action: 'update_fees',
       changes: changes,
     );
@@ -131,6 +141,8 @@ class VisitService {
   Future<void> closeVisit({
     required String visitId,
     required String updatedByUid,
+    String? updatedByEmail,
+    String? updatedByRole,
   }) async {
     final ref = _db.collection('visits').doc(visitId);
 
@@ -151,6 +163,8 @@ class VisitService {
     await _logAudit(
       visitId: visitId,
       uid: updatedByUid,
+      email: updatedByEmail,
+      role: updatedByRole,
       action: 'close_visit',
     );
   }
@@ -158,6 +172,8 @@ class VisitService {
   Future<void> reopenVisit({
     required String visitId,
     required String updatedByUid,
+    String? updatedByEmail,
+    String? updatedByRole,
   }) async {
     final ref = _db.collection('visits').doc(visitId);
 
@@ -178,6 +194,8 @@ class VisitService {
     await _logAudit(
       visitId: visitId,
       uid: updatedByUid,
+      email: updatedByEmail,
+      role: updatedByRole,
       action: 'reopen_visit',
     );
   }
@@ -185,6 +203,8 @@ class VisitService {
   Future<int> closeAllOpenVisitsForDate({
     required String dateKey,
     required String updatedByUid,
+    String? updatedByEmail,
+    String? updatedByRole,
   }) async {
     final q = await _db
         .collection('visits')
@@ -206,11 +226,12 @@ class VisitService {
     }
     await batch.commit();
 
-    // Optional: log one “bulk close” entry per visit
     for (final d in q.docs) {
       await _logAudit(
         visitId: d.id,
         uid: updatedByUid,
+        email: updatedByEmail,
+        role: updatedByRole,
         action: 'close_visit_bulk',
         meta: {'dateKey': dateKey},
       );

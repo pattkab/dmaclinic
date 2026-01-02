@@ -34,10 +34,7 @@ class AuditTrailPage extends StatelessWidget {
         lines.add(Text('$field: $v'));
       }
     }
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: lines,
-    );
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: lines);
   }
 
   @override
@@ -49,9 +46,7 @@ class AuditTrailPage extends StatelessWidget {
         .orderBy('ts', descending: true);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Audit Trail'),
-      ),
+      appBar: AppBar(title: const Text('Audit Trail')),
       body: StreamBuilder<QuerySnapshot<Map<String, dynamic>>>(
         stream: ref.snapshots(),
         builder: (context, snap) {
@@ -66,13 +61,22 @@ class AuditTrailPage extends StatelessWidget {
 
           return ListView.separated(
             padding: const EdgeInsets.all(12),
+            itemCount: docs.length,
+            separatorBuilder: (_, __) => const SizedBox(height: 10),
             itemBuilder: (_, i) {
               final m = docs[i].data();
+
               final action = (m['action'] as String?) ?? '';
               final uid = (m['uid'] as String?) ?? '';
+              final email = (m['email'] as String?) ?? '';
+              final role = (m['role'] as String?) ?? '';
               final ts = m['ts'] as Timestamp?;
+
               final changes = (m['changes'] as Map<String, dynamic>?) ?? {};
               final meta = (m['meta'] as Map<String, dynamic>?) ?? {};
+
+              final who = email.isNotEmpty ? email : uid;
+              final whoLine = role.isNotEmpty ? '$who ($role)' : who;
 
               return Card(
                 child: Padding(
@@ -85,26 +89,22 @@ class AuditTrailPage extends StatelessWidget {
                           Expanded(
                             child: Text(
                               action,
-                              style: const TextStyle(
-                                fontWeight: FontWeight.bold,
-                                fontSize: 14,
-                              ),
+                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                             ),
                           ),
-                          Text(
-                            _fmtTs(ts),
-                            style: const TextStyle(fontSize: 12),
-                          ),
+                          Text(_fmtTs(ts), style: const TextStyle(fontSize: 12)),
                         ],
                       ),
                       const SizedBox(height: 6),
-                      Text('By: $uid', style: const TextStyle(fontSize: 12)),
+                      Text('By: $whoLine', style: const TextStyle(fontSize: 12)),
+
                       if (changes.isNotEmpty) ...[
                         const SizedBox(height: 10),
                         const Text('Changes:', style: TextStyle(fontWeight: FontWeight.bold)),
                         const SizedBox(height: 4),
                         _changeLines(changes),
                       ],
+
                       if (meta.isNotEmpty) ...[
                         const SizedBox(height: 10),
                         const Text('Meta:', style: TextStyle(fontWeight: FontWeight.bold)),
@@ -116,8 +116,6 @@ class AuditTrailPage extends StatelessWidget {
                 ),
               );
             },
-            separatorBuilder: (_, __) => const SizedBox(height: 10),
-            itemCount: docs.length,
           );
         },
       ),

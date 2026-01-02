@@ -129,6 +129,10 @@ class _VisitTodayPageState extends State<VisitTodayPage> {
         final total = visit.total;
         final isClosed = visit.status == 'closed';
 
+        final user = _auth.user;
+        final uid = user?.uid;
+        final email = user?.email ?? '';
+
         return Scaffold(
           appBar: AppBar(
             title: Column(
@@ -212,7 +216,6 @@ class _VisitTodayPageState extends State<VisitTodayPage> {
               ),
               const SizedBox(height: 10),
 
-              // Close/Reopen controls
               if (isAdminOrReception())
                 Card(
                   child: Padding(
@@ -224,8 +227,7 @@ class _VisitTodayPageState extends State<VisitTodayPage> {
                             icon: Icon(isClosed ? Icons.lock_open : Icons.lock),
                             label: Text(isClosed ? 'Reopen Visit' : 'Close Visit'),
                             onPressed: () async {
-                              final user = _auth.user;
-                              if (user == null) return;
+                              if (uid == null) return;
 
                               if (!isClosed) {
                                 final ok = await _confirm(
@@ -233,14 +235,26 @@ class _VisitTodayPageState extends State<VisitTodayPage> {
                                   'Once closed, fees cannot be edited unless you reopen.',
                                 );
                                 if (!ok) return;
-                                await _visits.closeVisit(visitId: visit.visitId, updatedByUid: user.uid);
+
+                                await _visits.closeVisit(
+                                  visitId: visit.visitId,
+                                  updatedByUid: uid,
+                                  updatedByEmail: email,
+                                  updatedByRole: widget.role,
+                                );
                               } else {
                                 final ok = await _confirm(
                                   'Reopen this visit?',
                                   'This will allow editing fees again.',
                                 );
                                 if (!ok) return;
-                                await _visits.reopenVisit(visitId: visit.visitId, updatedByUid: user.uid);
+
+                                await _visits.reopenVisit(
+                                  visitId: visit.visitId,
+                                  updatedByUid: uid,
+                                  updatedByEmail: email,
+                                  updatedByRole: widget.role,
+                                );
                               }
                             },
                           ),
@@ -270,12 +284,13 @@ class _VisitTodayPageState extends State<VisitTodayPage> {
                 locked: isClosed,
                 icon: Icons.medical_services,
                 onSave: (v) async {
-                  final user = _auth.user;
-                  if (user == null) return;
+                  if (uid == null) return;
                   await _visits.updateFees(
                     visitId: visit.visitId,
                     consultationFee: v,
-                    updatedByUid: user.uid,
+                    updatedByUid: uid,
+                    updatedByEmail: email,
+                    updatedByRole: widget.role,
                   );
                 },
               ),
@@ -286,12 +301,13 @@ class _VisitTodayPageState extends State<VisitTodayPage> {
                 locked: isClosed,
                 icon: Icons.science,
                 onSave: (v) async {
-                  final user = _auth.user;
-                  if (user == null) return;
+                  if (uid == null) return;
                   await _visits.updateFees(
                     visitId: visit.visitId,
                     labFee: v,
-                    updatedByUid: user.uid,
+                    updatedByUid: uid,
+                    updatedByEmail: email,
+                    updatedByRole: widget.role,
                   );
                 },
               ),
@@ -302,12 +318,13 @@ class _VisitTodayPageState extends State<VisitTodayPage> {
                 locked: isClosed,
                 icon: Icons.local_pharmacy,
                 onSave: (v) async {
-                  final user = _auth.user;
-                  if (user == null) return;
+                  if (uid == null) return;
                   await _visits.updateFees(
                     visitId: visit.visitId,
                     pharmacyFee: v,
-                    updatedByUid: user.uid,
+                    updatedByUid: uid,
+                    updatedByEmail: email,
+                    updatedByRole: widget.role,
                   );
                 },
               ),
@@ -318,12 +335,13 @@ class _VisitTodayPageState extends State<VisitTodayPage> {
                 locked: isClosed,
                 icon: Icons.healing,
                 onSave: (v) async {
-                  final user = _auth.user;
-                  if (user == null) return;
+                  if (uid == null) return;
                   await _visits.updateFees(
                     visitId: visit.visitId,
                     proceduresFee: v,
-                    updatedByUid: user.uid,
+                    updatedByUid: uid,
+                    updatedByEmail: email,
+                    updatedByRole: widget.role,
                   );
                 },
               ),
