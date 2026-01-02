@@ -203,6 +203,20 @@ class _DashboardPageState extends State<DashboardPage> {
     );
   }
 
+  Widget _footer(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
+      alignment: Alignment.center,
+      child: Text(
+        'Developed by ${AppConstants.developer} • ${AppConstants.versionLabel}',
+        style: Theme.of(context).textTheme.bodySmall?.copyWith(
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        textAlign: TextAlign.center,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final todayKey = DateUtilsX.todayKey();
@@ -256,12 +270,14 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ],
       ),
+
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
         onRefresh: _loadToday,
         child: ListView(
-          padding: const EdgeInsets.all(12),
+          // ✅ add bottom padding so last content doesn't hide behind footer
+          padding: const EdgeInsets.fromLTRB(12, 12, 12, 70),
           children: [
             Card(
               child: Padding(
@@ -274,11 +290,6 @@ class _DashboardPageState extends State<DashboardPage> {
                     Text(
                       'Signed in role: ${widget.role}',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Developer: ${AppConstants.developer}',
-                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
                     ),
                   ],
                 ),
@@ -293,7 +304,10 @@ class _DashboardPageState extends State<DashboardPage> {
                 SizedBox(width: 260, child: _statCard('Patients seen', '${_today!.patientsSeen}', Icons.groups)),
                 SizedBox(width: 260, child: _statCard('New patients', '${_today!.newPatients}', Icons.person_add)),
                 SizedBox(width: 260, child: _statCard('Old patients', '${_today!.oldPatients}', Icons.history)),
-                SizedBox(width: 260, child: _statCard('Consultation', '${_today!.consultationTotal}', Icons.medical_services)),
+                SizedBox(
+                  width: 260,
+                  child: _statCard('Consultation', '${_today!.consultationTotal}', Icons.medical_services),
+                ),
                 SizedBox(width: 260, child: _statCard('Lab', '${_today!.labTotal}', Icons.science)),
                 SizedBox(width: 260, child: _statCard('Pharmacy', '${_today!.pharmacyTotal}', Icons.local_pharmacy)),
                 SizedBox(width: 260, child: _statCard('Procedures', '${_today!.proceduresTotal}', Icons.healing)),
@@ -369,6 +383,9 @@ class _DashboardPageState extends State<DashboardPage> {
           ],
         ),
       ),
+
+      // ✅ Footer at bottom of screen
+      bottomNavigationBar: _footer(context),
     );
   }
 }
