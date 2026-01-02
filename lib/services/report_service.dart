@@ -4,10 +4,14 @@ class DailyReport {
   final int patientsSeen;
   final int newPatients;
   final int oldPatients;
+
   final int consultationTotal;
   final int labTotal;
   final int pharmacyTotal;
+  final int pharmacyOtherTotal;
+  final int inpatientTotal;
   final int proceduresTotal;
+
   final int grandTotal;
 
   DailyReport({
@@ -17,6 +21,8 @@ class DailyReport {
     required this.consultationTotal,
     required this.labTotal,
     required this.pharmacyTotal,
+    required this.pharmacyOtherTotal,
+    required this.inpatientTotal,
     required this.proceduresTotal,
     required this.grandTotal,
   });
@@ -27,6 +33,8 @@ class TrendPoint {
   final int consultation;
   final int lab;
   final int pharmacy;
+  final int pharmacyOther;
+  final int inpatient;
   final int procedures;
 
   TrendPoint({
@@ -34,10 +42,12 @@ class TrendPoint {
     required this.consultation,
     required this.lab,
     required this.pharmacy,
+    required this.pharmacyOther,
+    required this.inpatient,
     required this.procedures,
   });
 
-  int get total => consultation + lab + pharmacy + procedures;
+  int get total => consultation + lab + pharmacy + pharmacyOther + inpatient + procedures;
 }
 
 class ReportService {
@@ -49,13 +59,15 @@ class ReportService {
         .where('visitDate', isEqualTo: dateKey)
         .get();
 
-    int consult = 0, lab = 0, pharm = 0, proc = 0;
+    int consult = 0, lab = 0, pharm = 0, pharmOther = 0, inpatient = 0, proc = 0;
 
     for (final d in visitsSnap.docs) {
       final m = d.data();
       consult += (m['consultationFee'] ?? 0) as int;
       lab += (m['labFee'] ?? 0) as int;
       pharm += (m['pharmacyFee'] ?? 0) as int;
+      pharmOther += (m['pharmacyFeeOther'] ?? 0) as int;
+      inpatient += (m['inpatientFee'] ?? 0) as int;
       proc += (m['proceduresFee'] ?? 0) as int;
     }
 
@@ -69,6 +81,8 @@ class ReportService {
     final patientsSeen = visitsSnap.docs.length;
     final oldPatients = (patientsSeen - newPatients) < 0 ? 0 : (patientsSeen - newPatients);
 
+    final grand = consult + lab + pharm + pharmOther + inpatient + proc;
+
     return DailyReport(
       patientsSeen: patientsSeen,
       newPatients: newPatients,
@@ -76,8 +90,10 @@ class ReportService {
       consultationTotal: consult,
       labTotal: lab,
       pharmacyTotal: pharm,
+      pharmacyOtherTotal: pharmOther,
+      inpatientTotal: inpatient,
       proceduresTotal: proc,
-      grandTotal: consult + lab + pharm + proc,
+      grandTotal: grand,
     );
   }
 
@@ -102,28 +118,43 @@ class ReportService {
         'consultation': 0,
         'lab': 0,
         'pharmacy': 0,
+        'pharmacyOther': 0,
+        'inpatient': 0,
         'procedures': 0,
       });
 
       byDate[date]!['consultation'] =
           (byDate[date]!['consultation'] ?? 0) + ((m['consultationFee'] ?? 0) as int);
+
       byDate[date]!['lab'] =
           (byDate[date]!['lab'] ?? 0) + ((m['labFee'] ?? 0) as int);
+
       byDate[date]!['pharmacy'] =
           (byDate[date]!['pharmacy'] ?? 0) + ((m['pharmacyFee'] ?? 0) as int);
+
+      byDate[date]!['pharmacyOther'] =
+          (byDate[date]!['pharmacyOther'] ?? 0) + ((m['pharmacyFeeOther'] ?? 0) as int);
+
+      byDate[date]!['inpatient'] =
+          (byDate[date]!['inpatient'] ?? 0) + ((m['inpatientFee'] ?? 0) as int);
+
       byDate[date]!['procedures'] =
           (byDate[date]!['procedures'] ?? 0) + ((m['proceduresFee'] ?? 0) as int);
     }
 
     final keys = byDate.keys.toList()..sort();
     return keys
-        .map((k) => TrendPoint(
-      dateKey: k,
-      consultation: byDate[k]!['consultation'] ?? 0,
-      lab: byDate[k]!['lab'] ?? 0,
-      pharmacy: byDate[k]!['pharmacy'] ?? 0,
-      procedures: byDate[k]!['procedures'] ?? 0,
-    ))
+        .map(
+          (k) => TrendPoint(
+        dateKey: k,
+        consultation: byDate[k]!['consultation'] ?? 0,
+        lab: byDate[k]!['lab'] ?? 0,
+        pharmacy: byDate[k]!['pharmacy'] ?? 0,
+        pharmacyOther: byDate[k]!['pharmacyOther'] ?? 0,
+        inpatient: byDate[k]!['inpatient'] ?? 0,
+        procedures: byDate[k]!['procedures'] ?? 0,
+      ),
+    )
         .toList();
   }
 }

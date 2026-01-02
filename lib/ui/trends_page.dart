@@ -168,6 +168,8 @@ class _TrendsPageState extends State<TrendsPage> {
     final consult = _points.fold(0, (a, b) => a + b.consultation);
     final lab = _points.fold(0, (a, b) => a + b.lab);
     final pharm = _points.fold(0, (a, b) => a + b.pharmacy);
+    final pharmOther = _points.fold(0, (a, b) => a + b.pharmacyOther);
+    final inpatient = _points.fold(0, (a, b) => a + b.inpatient);
     final proc = _points.fold(0, (a, b) => a + b.procedures);
 
     return Scaffold(
@@ -218,7 +220,6 @@ class _TrendsPageState extends State<TrendsPage> {
             ),
           ),
           const SizedBox(height: 10),
-
           Card(
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -240,9 +241,7 @@ class _TrendsPageState extends State<TrendsPage> {
               ),
             ),
           ),
-
           const SizedBox(height: 10),
-
           Wrap(
             spacing: 10,
             runSpacing: 10,
@@ -250,12 +249,12 @@ class _TrendsPageState extends State<TrendsPage> {
               SizedBox(width: 220, child: _summaryTile('Consultation', consult)),
               SizedBox(width: 220, child: _summaryTile('Lab', lab)),
               SizedBox(width: 220, child: _summaryTile('Pharmacy', pharm)),
+              SizedBox(width: 220, child: _summaryTile('Pharmacy (Other)', pharmOther)),
+              SizedBox(width: 220, child: _summaryTile('Inpatient', inpatient)),
               SizedBox(width: 220, child: _summaryTile('Procedures', proc)),
             ],
           ),
-
           const SizedBox(height: 10),
-
           Card(
             child: Padding(
               padding: const EdgeInsets.all(12),
@@ -275,6 +274,8 @@ class _TrendsPageState extends State<TrendsPage> {
                           DataColumn(label: Text('Consult')),
                           DataColumn(label: Text('Lab')),
                           DataColumn(label: Text('Pharm')),
+                          DataColumn(label: Text('Pharm Other')),
+                          DataColumn(label: Text('Inpatient')),
                           DataColumn(label: Text('Proc')),
                           DataColumn(label: Text('Total')),
                         ],
@@ -286,6 +287,8 @@ class _TrendsPageState extends State<TrendsPage> {
                               DataCell(Text('${p.consultation}')),
                               DataCell(Text('${p.lab}')),
                               DataCell(Text('${p.pharmacy}')),
+                              DataCell(Text('${p.pharmacyOther}')),
+                              DataCell(Text('${p.inpatient}')),
                               DataCell(Text('${p.procedures}')),
                               DataCell(Text('${p.total}')),
                             ],

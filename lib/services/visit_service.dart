@@ -53,6 +53,8 @@ class VisitService {
       labFee: 0,
       pharmacyFee: 0,
       proceduresFee: 0,
+      pharmacyFeeOther: 0,
+      inpatientFee: 0,
       status: 'open',
     );
 
@@ -81,6 +83,8 @@ class VisitService {
     int? labFee,
     int? pharmacyFee,
     int? proceduresFee,
+    int? pharmacyFeeOther,
+    int? inpatientFee,
     required String updatedByUid,
     String? updatedByEmail,
     String? updatedByRole,
@@ -99,6 +103,8 @@ class VisitService {
     final oldLab = (current['labFee'] ?? 0) as int;
     final oldPharm = (current['pharmacyFee'] ?? 0) as int;
     final oldProc = (current['proceduresFee'] ?? 0) as int;
+    final oldPharmOther = (current['pharmacyFeeOther'] ?? 0) as int;
+    final oldInpatient = (current['inpatientFee'] ?? 0) as int;
 
     final updates = <String, dynamic>{
       'updatedAt': FieldValue.serverTimestamp(),
@@ -122,6 +128,14 @@ class VisitService {
     if (proceduresFee != null && proceduresFee != oldProc) {
       updates['proceduresFee'] = proceduresFee;
       changes['proceduresFee'] = {'old': oldProc, 'new': proceduresFee};
+    }
+    if (pharmacyFeeOther != null && pharmacyFeeOther != oldPharmOther) {
+      updates['pharmacyFeeOther'] = pharmacyFeeOther;
+      changes['pharmacyFeeOther'] = {'old': oldPharmOther, 'new': pharmacyFeeOther};
+    }
+    if (inpatientFee != null && inpatientFee != oldInpatient) {
+      updates['inpatientFee'] = inpatientFee;
+      changes['inpatientFee'] = {'old': oldInpatient, 'new': inpatientFee};
     }
 
     if (changes.isEmpty) return;

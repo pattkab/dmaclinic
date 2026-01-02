@@ -10,7 +10,6 @@ class ExportService {
     required String fromDateKey, // YYYY-MM-DD
     required String toDateKey, // YYYY-MM-DD
   }) async {
-    // Query visits by visitDate range (string range works with YYYY-MM-DD)
     final q = await _db
         .collection('visits')
         .where('visitDate', isGreaterThanOrEqualTo: fromDateKey)
@@ -20,7 +19,6 @@ class ExportService {
 
     final visits = q.docs.map((d) => d.data()).toList();
 
-    // Build CSV header
     final rows = <List<String>>[];
     rows.add([
       'visitId',
@@ -31,13 +29,20 @@ class ExportService {
       'consultationFee',
       'labFee',
       'pharmacyFee',
+      'pharmacyFeeOther',
+      'inpatientFee',
       'proceduresFee',
       'total',
       'status',
       'updatedBy',
     ]);
 
-    // Fetch patient details per visit (simple + reliable for MVP)
+    int toInt(dynamic v) {
+      if (v == null) return 0;
+      if (v is int) return v;
+      return int.tryParse(v.toString()) ?? 0;
+    }
+
     for (final v in visits) {
       final patientId = (v['patientId'] ?? '').toString();
       String patientName = '';
@@ -51,20 +56,17 @@ class ExportService {
             patientName = (p['fullName'] ?? p['name'] ?? '').toString();
             patientPhone = (p['phone'] ?? '').toString();
           }
-        } catch (_) {
-          // ignore patient fetch errors for export
-        }
+        } catch (_) {}
       }
 
-      final consult = (v['consultationFee'] ?? 0).toString();
-      final lab = (v['labFee'] ?? 0).toString();
-      final pharm = (v['pharmacyFee'] ?? 0).toString();
-      final proc = (v['proceduresFee'] ?? 0).toString();
+      final consult = toInt(v['consultationFee']);
+      final lab = toInt(v['labFee']);
+      final pharm = toInt(v['pharmacyFee']);
+      final pharmOther = toInt(v['pharmacyFeeOther']);
+      final inpatient = toInt(v['inpatientFee']);
+      final proc = toInt(v['proceduresFee']);
 
-      int total = 0;
-      try {
-        total = (int.parse(consult)) + (int.parse(lab)) + (int.parse(pharm)) + (int.parse(proc));
-      } catch (_) {}
+      final total = consult + lab + pharm + pharmOther + inpatient + proc;
 
       rows.add([
         (v['visitId'] ?? '').toString(),
@@ -72,10 +74,12 @@ class ExportService {
         patientId,
         patientName,
         patientPhone,
-        consult,
-        lab,
-        pharm,
-        proc,
+        consult.toString(),
+        lab.toString(),
+        pharm.toString(),
+        pharmOther.toString(),
+        inpatient.toString(),
+        proc.toString(),
         total.toString(),
         (v['status'] ?? '').toString(),
         (v['updatedBy'] ?? '').toString(),

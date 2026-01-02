@@ -22,7 +22,7 @@ class DmaClinicApp extends StatelessWidget {
 
   ThemeData _theme() {
     final scheme = ColorScheme.fromSeed(
-      seedColor: Colors.teal,
+      seedColor: Colors.blue.shade900,
       brightness: Brightness.light,
     );
 
@@ -46,6 +46,8 @@ class DmaClinicApp extends StatelessWidget {
 
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
+          backgroundColor: Colors.blue.shade900,
+          foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
         ),
@@ -62,6 +64,11 @@ class DmaClinicApp extends StatelessWidget {
         centerTitle: false,
         backgroundColor: scheme.surface,
         surfaceTintColor: scheme.surfaceTint,
+        titleTextStyle: TextStyle(
+          fontSize: 24,
+          fontWeight: FontWeight.bold,
+          color: Colors.blue.shade900,
+        ),
       ),
     );
   }

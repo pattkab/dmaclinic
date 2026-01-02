@@ -46,10 +46,135 @@ class _DailyReportPageState extends State<DailyReportPage> {
     });
   }
 
-  Widget _row(String label, int value) {
-    return ListTile(
-      title: Text(label),
-      trailing: Text('$value', style: const TextStyle(fontWeight: FontWeight.bold)),
+  String _fmt(int v) {
+    final s = v.toString();
+    if (s.length <= 3) return s;
+    final b = StringBuffer();
+    int c = 0;
+    for (int i = s.length - 1; i >= 0; i--) {
+      b.write(s[i]);
+      c++;
+      if (c == 3 && i != 0) {
+        b.write(',');
+        c = 0;
+      }
+    }
+    return b.toString().split('').reversed.join();
+  }
+
+  Widget _metricTile(String label, int value, {IconData? icon}) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              Container(
+                height: 42,
+                width: 42,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: Theme.of(context).colorScheme.primaryContainer,
+                ),
+                child: Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.onPrimaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+            ),
+            Text(
+              'UGX ${_fmt(value)}',
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _countTile(String label, int value, {IconData? icon}) {
+    return Card(
+      child: Padding(
+        padding: const EdgeInsets.all(14),
+        child: Row(
+          children: [
+            if (icon != null) ...[
+              Container(
+                height: 42,
+                width: 42,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(14),
+                  color: Theme.of(context).colorScheme.secondaryContainer,
+                ),
+                child: Icon(
+                  icon,
+                  color: Theme.of(context).colorScheme.onSecondaryContainer,
+                ),
+              ),
+              const SizedBox(width: 12),
+            ],
+            Expanded(
+              child: Text(
+                label,
+                style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600),
+              ),
+            ),
+            Text(
+              _fmt(value),
+              style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w800),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _grandTotalCard(int total) {
+    return Card(
+      color: Colors.orange.shade800,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            Container(
+              height: 46,
+              width: 46,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(16),
+                color: Colors.white.withOpacity(0.18),
+              ),
+              child: const Icon(Icons.payments, color: Colors.white),
+            ),
+            const SizedBox(width: 12),
+            const Expanded(
+              child: Text(
+                'GRAND TOTAL',
+                style: TextStyle(
+                  color: Colors.white,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w900,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ),
+            Text(
+              'UGX ${_fmt(total)}',
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 22,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
     );
   }
 
@@ -68,22 +193,24 @@ class _DailyReportPageState extends State<DailyReportPage> {
           : ListView(
         padding: const EdgeInsets.all(12),
         children: [
-          Card(
-            child: Column(
-              children: [
-                _row('Patients seen', _rep!.patientsSeen),
-                _row('New patients', _rep!.newPatients),
-                _row('Old patients', _rep!.oldPatients),
-                const Divider(height: 1),
-                _row('Consultation total', _rep!.consultationTotal),
-                _row('Lab total', _rep!.labTotal),
-                _row('Pharmacy total', _rep!.pharmacyTotal),
-                _row('Procedures total', _rep!.proceduresTotal),
-                const Divider(height: 1),
-                _row('Grand total', _rep!.grandTotal),
-              ],
-            ),
-          ),
+          // Patient counts
+          _countTile('Patients seen', _rep!.patientsSeen, icon: Icons.groups),
+          _countTile('New patients', _rep!.newPatients, icon: Icons.person_add),
+          _countTile('Old patients', _rep!.oldPatients, icon: Icons.history),
+          const SizedBox(height: 6),
+
+          // Fee totals (bigger)
+          _metricTile('Consultation total', _rep!.consultationTotal, icon: Icons.medical_services),
+          _metricTile('Lab total', _rep!.labTotal, icon: Icons.science),
+          _metricTile('Pharmacy total', _rep!.pharmacyTotal, icon: Icons.local_pharmacy),
+          _metricTile('Pharmacy (Other) total', _rep!.pharmacyOtherTotal, icon: Icons.local_pharmacy_outlined),
+          _metricTile('Inpatient total', _rep!.inpatientTotal, icon: Icons.hotel),
+          _metricTile('Procedures total', _rep!.proceduresTotal, icon: Icons.healing),
+
+          const SizedBox(height: 6),
+
+          // Grand total (bold + large)
+          _grandTotalCard(_rep!.grandTotal),
         ],
       ),
     );

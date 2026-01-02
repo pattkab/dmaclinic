@@ -22,6 +22,10 @@ class PatientService {
   Future<Patient> createPatient({
     required String fullName,
     required String phone,
+    int? age,
+    String? sex,
+    String? address,
+    String? nextOfKin,
   }) async {
     final today = DateUtilsX.todayKey();
     final patientId = await _nextPatientId();
@@ -30,6 +34,10 @@ class PatientService {
       patientId: patientId,
       fullName: fullName.trim(),
       phone: phone.trim(),
+      age: age,
+      sex: sex,
+      address: address,
+      nextOfKin: nextOfKin,
       firstVisitDate: today,
       createdAt: DateTime.now(),
     );

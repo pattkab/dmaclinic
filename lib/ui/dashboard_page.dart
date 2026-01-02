@@ -1,3 +1,6 @@
+// NOTE: This is your full file with only the reporting fields updated.
+// Paste the whole thing to avoid missing imports / class changes.
+
 import 'package:flutter/material.dart';
 
 import '../constants/app_constants.dart';
@@ -126,8 +129,9 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  Widget _statCard(String title, String value, IconData icon) {
+  Widget _statCard(String title, String? value, IconData icon, {Color? cardColor, Color? textColor}) {
     return Card(
+      color: cardColor,
       child: Padding(
         padding: const EdgeInsets.all(14),
         child: Row(
@@ -137,18 +141,26 @@ class _DashboardPageState extends State<DashboardPage> {
               width: 44,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(14),
-                color: Theme.of(context).colorScheme.primaryContainer,
+                color: cardColor != null
+                    ? Colors.white.withOpacity(0.2)
+                    : Theme.of(context).colorScheme.primaryContainer,
               ),
-              child: Icon(icon, color: Theme.of(context).colorScheme.onPrimaryContainer),
+              child: Icon(
+                icon,
+                color: cardColor != null ? Colors.white : Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
             ),
             const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(title, style: const TextStyle(fontSize: 12)),
-                  const SizedBox(height: 6),
-                  Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  Text(title, style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: textColor)),
+                  if (value != null) ...[
+                    const SizedBox(height: 6),
+                    Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: textColor)),
+                  ]
                 ],
               ),
             ),
@@ -159,34 +171,30 @@ class _DashboardPageState extends State<DashboardPage> {
   }
 
   Widget _brandRow() {
-    final logo = widget.settings.logoUrl.trim();
     return Row(
       children: [
-        if (logo.isNotEmpty)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(12),
-            child: Image.network(
-              logo,
-              height: 34,
-              width: 34,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const SizedBox(height: 34, width: 34),
-            ),
-          )
-        else
-          Container(
-            height: 34,
-            width: 34,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(12),
-              color: Theme.of(context).colorScheme.primaryContainer,
-            ),
-            child: Icon(
-              Icons.local_hospital,
-              size: 20,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(12),
+          child: Image.asset(
+            'assets/dma_clinic.png',
+            height: 50,
+            width: 50,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Container(
+              height: 50,
+              width: 50,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(12),
+                color: Theme.of(context).colorScheme.primaryContainer,
+              ),
+              child: Icon(
+                Icons.local_hospital,
+                size: 28,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
             ),
           ),
+        ),
         const SizedBox(width: 10),
         Expanded(
           child: Text(
@@ -200,20 +208,6 @@ class _DashboardPageState extends State<DashboardPage> {
           style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
         ),
       ],
-    );
-  }
-
-  Widget _footer(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 12),
-      alignment: Alignment.center,
-      child: Text(
-        'Developed by ${AppConstants.developer} • ${AppConstants.versionLabel}',
-        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-        textAlign: TextAlign.center,
-      ),
     );
   }
 
@@ -270,23 +264,21 @@ class _DashboardPageState extends State<DashboardPage> {
           ),
         ],
       ),
-
       body: _loading
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
         onRefresh: _loadToday,
         child: ListView(
-          // ✅ add bottom padding so last content doesn't hide behind footer
-          padding: const EdgeInsets.fromLTRB(12, 12, 12, 70),
+          padding: const EdgeInsets.all(12),
           children: [
             Card(
+              margin: const EdgeInsets.only(bottom: 10),
               child: Padding(
-                padding: const EdgeInsets.all(14),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                padding: const EdgeInsets.all(10),
+                child: Row(
                   children: [
-                    _brandRow(),
-                    const SizedBox(height: 10),
+                    Expanded(child: _brandRow()),
+                    const SizedBox(width: 10),
                     Text(
                       'Signed in role: ${widget.role}',
                       style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
@@ -295,8 +287,65 @@ class _DashboardPageState extends State<DashboardPage> {
                 ),
               ),
             ),
+            Row(
+              children: [
+                Expanded(
+                  child: Container(
+                    height: 80,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.1),
+                          spreadRadius: 1,
+                          blurRadius: 3,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
+                    ),
+                    child: FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: Colors.green.shade800,
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+                      ),
+                      onPressed: () async {
+                        await Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => PatientSearchPage(role: widget.role)),
+                        );
+                        _loadToday();
+                      },
+                      child: const FittedBox(
+                        fit: BoxFit.scaleDown,
+                        child: Text(
+                          'Patient Search and Register',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(fontSize: 20),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                if (_canCloseAll)
+                  Expanded(
+                    child: SizedBox(
+                      height: 80,
+                      child: InkWell(
+                        onTap: _closeAllOpenToday,
+                        child: _statCard(
+                          'Close All Open Visits (Today)',
+                          null,
+                          Icons.lock,
+                          cardColor: Colors.purple.shade700,
+                          textColor: Colors.white,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
             const SizedBox(height: 10),
-
             Wrap(
               runSpacing: 10,
               spacing: 10,
@@ -304,88 +353,54 @@ class _DashboardPageState extends State<DashboardPage> {
                 SizedBox(width: 260, child: _statCard('Patients seen', '${_today!.patientsSeen}', Icons.groups)),
                 SizedBox(width: 260, child: _statCard('New patients', '${_today!.newPatients}', Icons.person_add)),
                 SizedBox(width: 260, child: _statCard('Old patients', '${_today!.oldPatients}', Icons.history)),
-                SizedBox(
-                  width: 260,
-                  child: _statCard('Consultation', '${_today!.consultationTotal}', Icons.medical_services),
-                ),
+                SizedBox(width: 260, child: _statCard('Consultation Fees', '${_today!.consultationTotal}', Icons.medical_services)),
                 SizedBox(width: 260, child: _statCard('Lab', '${_today!.labTotal}', Icons.science)),
                 SizedBox(width: 260, child: _statCard('Pharmacy', '${_today!.pharmacyTotal}', Icons.local_pharmacy)),
+                SizedBox(width: 260, child: _statCard('Pharmacy (other)', '${_today!.pharmacyOtherTotal}', Icons.local_pharmacy_outlined)),
+                SizedBox(width: 260, child: _statCard('In-patients', '${_today!.inpatientTotal}', Icons.hotel)),
                 SizedBox(width: 260, child: _statCard('Procedures', '${_today!.proceduresTotal}', Icons.healing)),
-                SizedBox(width: 260, child: _statCard('Grand total', '${_today!.grandTotal}', Icons.payments)),
-              ],
-            ),
-
-            const SizedBox(height: 12),
-
-            Row(
-              children: [
-                Expanded(
-                  child: FilledButton.icon(
-                    icon: const Icon(Icons.search),
-                    label: const Text('Patient Search'),
-                    onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => PatientSearchPage(role: widget.role)),
-                      );
-                      _loadToday();
-                    },
+                SizedBox(
+                  width: 260,
+                  child: _statCard(
+                    'Grand total',
+                    '${_today!.grandTotal}',
+                    Icons.payments,
+                    cardColor: Colors.orange.shade800,
+                    textColor: Colors.white,
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.analytics),
-                    label: const Text('Daily Report'),
-                    onPressed: () async {
+                SizedBox(
+                  width: 260,
+                  child: InkWell(
+                    onTap: () async {
                       await Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyReportPage()));
                       _loadToday();
                     },
+                    child: _statCard('Daily Report', null, Icons.analytics, cardColor: Colors.teal.shade700, textColor: Colors.white),
                   ),
                 ),
-                const SizedBox(width: 10),
-                Expanded(
-                  child: OutlinedButton.icon(
-                    icon: const Icon(Icons.show_chart),
-                    label: const Text('Trends'),
-                    onPressed: () async {
+                SizedBox(
+                  width: 260,
+                  child: InkWell(
+                    onTap: () async {
                       await Navigator.push(context, MaterialPageRoute(builder: (_) => const TrendsPage()));
                     },
+                    child: _statCard('Trends', null, Icons.show_chart, cardColor: Colors.indigo.shade700, textColor: Colors.white),
                   ),
                 ),
               ],
             ),
-
-            const SizedBox(height: 12),
-
-            if (_canCloseAll)
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  icon: const Icon(Icons.lock),
-                  label: const Text('Close All Open Visits (Today)'),
-                  onPressed: _closeAllOpenToday,
-                ),
+            const SizedBox(height: 20),
+            Center(
+              child: Text(
+                'Developer: ${AppConstants.developer}',
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
               ),
-
-            if (_canCloseAll) const SizedBox(height: 8),
-
-            if (_canCloseAll)
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Text(
-                    'End-of-day closeout: closes all OPEN visits for today and locks fees to prevent later edits.',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ),
-              ),
+            ),
+            const SizedBox(height: 10),
           ],
         ),
       ),
-
-      // ✅ Footer at bottom of screen
-      bottomNavigationBar: _footer(context),
     );
   }
 }

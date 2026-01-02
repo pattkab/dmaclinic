@@ -9,6 +9,8 @@ class Visit {
   final int labFee;
   final int pharmacyFee;
   final int proceduresFee;
+  final int pharmacyFeeOther;
+  final int inpatientFee;
 
   // Status control
   final String status; // "open" | "closed"
@@ -33,6 +35,8 @@ class Visit {
     required this.labFee,
     required this.pharmacyFee,
     required this.proceduresFee,
+    required this.pharmacyFeeOther,
+    required this.inpatientFee,
     required this.status,
     this.createdAt,
     this.updatedAt,
@@ -45,7 +49,7 @@ class Visit {
 
   /// Computed total (UGX)
   int get total =>
-      consultationFee + labFee + pharmacyFee + proceduresFee;
+      consultationFee + labFee + pharmacyFee + proceduresFee + pharmacyFeeOther + inpatientFee;
 
   /// Whether visit is locked
   bool get isClosed => status == 'closed';
@@ -59,6 +63,8 @@ class Visit {
     'labFee': labFee,
     'pharmacyFee': pharmacyFee,
     'proceduresFee': proceduresFee,
+    'pharmacyFeeOther': pharmacyFeeOther,
+    'inpatientFee': inpatientFee,
     'status': status,
 
     // audit fields (nullable)
@@ -88,6 +94,8 @@ class Visit {
       labFee: (m['labFee'] ?? 0) as int,
       pharmacyFee: (m['pharmacyFee'] ?? 0) as int,
       proceduresFee: (m['proceduresFee'] ?? 0) as int,
+      pharmacyFeeOther: (m['pharmacyFeeOther'] ?? 0) as int,
+      inpatientFee: (m['inpatientFee'] ?? 0) as int,
 
       status: (m['status'] ?? 'open') as String,
 
@@ -107,6 +115,8 @@ class Visit {
     int? labFee,
     int? pharmacyFee,
     int? proceduresFee,
+    int? pharmacyFeeOther,
+    int? inpatientFee,
     String? status,
     DateTime? updatedAt,
     String? updatedBy,
@@ -119,6 +129,8 @@ class Visit {
       labFee: labFee ?? this.labFee,
       pharmacyFee: pharmacyFee ?? this.pharmacyFee,
       proceduresFee: proceduresFee ?? this.proceduresFee,
+      pharmacyFeeOther: pharmacyFeeOther ?? this.pharmacyFeeOther,
+      inpatientFee: inpatientFee ?? this.inpatientFee,
       status: status ?? this.status,
       createdAt: createdAt,
       updatedAt: updatedAt ?? this.updatedAt,

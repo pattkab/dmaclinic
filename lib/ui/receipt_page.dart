@@ -1,7 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:pdf/pdf.dart';
-import 'package:pdf/widgets.dart' as pw;
-import 'package:printing/printing.dart';
 
 import '../models/patient.dart';
 import '../models/visit.dart';
@@ -16,106 +13,62 @@ class ReceiptPage extends StatelessWidget {
     required this.visit,
   });
 
-  pw.Document _buildPdf() {
-    final doc = pw.Document();
-    final isClosed = visit.status == 'closed';
-
-    pw.Widget row(String label, String value, {bool bold = false}) {
-      final style = pw.TextStyle(
-        fontSize: 12,
-        fontWeight: bold ? pw.FontWeight.bold : pw.FontWeight.normal,
-      );
-      return pw.Padding(
-        padding: const pw.EdgeInsets.symmetric(vertical: 4),
-        child: pw.Row(
-          mainAxisAlignment: pw.MainAxisAlignment.spaceBetween,
-          children: [
-            pw.Text(label, style: style),
-            pw.Text(value, style: style),
-          ],
-        ),
-      );
+  String _fmt(int v) {
+    final s = v.toString();
+    if (s.length <= 3) return s;
+    final out = StringBuffer();
+    int count = 0;
+    for (int i = s.length - 1; i >= 0; i--) {
+      out.write(s[i]);
+      count++;
+      if (count == 3 && i != 0) {
+        out.write(',');
+        count = 0;
+      }
     }
-
-    doc.addPage(
-      pw.Page(
-        pageFormat: PdfPageFormat.a4,
-        margin: const pw.EdgeInsets.all(28),
-        build: (context) => pw.Column(
-          crossAxisAlignment: pw.CrossAxisAlignment.start,
-          children: [
-            pw.Center(
-              child: pw.Text(
-                'DMA Clinic',
-                style: pw.TextStyle(fontSize: 18, fontWeight: pw.FontWeight.bold),
-              ),
-            ),
-            pw.SizedBox(height: 6),
-            pw.Center(
-              child: pw.Text(
-                isClosed ? 'RECEIPT (CLOSED)' : 'INVOICE (OPEN)',
-                style: pw.TextStyle(
-                  fontSize: 10,
-                  fontWeight: pw.FontWeight.bold,
-                ),
-              ),
-            ),
-            pw.SizedBox(height: 16),
-
-            row('Patient', patient.fullName, bold: true),
-            row('Patient ID', patient.patientId),
-            row('Phone', patient.phone),
-            row('Visit Date', visit.visitDate),
-
-            pw.Divider(height: 24),
-
-            row('Consultation', 'UGX ${visit.consultationFee}'),
-            row('Lab', 'UGX ${visit.labFee}'),
-            row('Pharmacy', 'UGX ${visit.pharmacyFee}'),
-            row('Procedures', 'UGX ${visit.proceduresFee}'),
-
-            pw.Divider(height: 24),
-            row('TOTAL', 'UGX ${visit.total}', bold: true),
-
-            pw.SizedBox(height: 18),
-            pw.Text('Notes:', style: pw.TextStyle(fontWeight: pw.FontWeight.bold)),
-            pw.SizedBox(height: 6),
-            pw.Text('Thank you for visiting DMA Clinic.', style: const pw.TextStyle(fontSize: 11)),
-
-            pw.SizedBox(height: 18),
-            pw.Divider(),
-            pw.SizedBox(height: 10),
-            pw.Text('Cashier / Reception Signature: ____________________'),
-            pw.SizedBox(height: 8),
-            pw.Text('Date: ____________________'),
-          ],
-        ),
-      ),
-    );
-
-    return doc;
+    return out.toString().split('').reversed.join();
   }
 
-  Future<void> _print(BuildContext context) async {
-    final doc = _buildPdf();
-    await Printing.layoutPdf(
-      onLayout: (format) async => doc.save(),
-      name: 'DMA_Receipt_${patient.patientId}_${visit.visitDate}.pdf',
-    );
-  }
+  Widget _lineItem({
+    required BuildContext context,
+    required String label,
+    required int amount,
+    IconData? icon,
+    bool showIfZero = true,
+  }) {
+    if (!showIfZero && amount == 0) return const SizedBox.shrink();
 
-  Widget _row(String label, String value, {bool bold = false}) {
-    final style = TextStyle(
-      fontSize: 14,
-      fontWeight: bold ? FontWeight.bold : FontWeight.w400,
-    );
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
         children: [
-          Expanded(child: Text(label, style: style)),
-          Text(value, style: style),
+          if (icon != null) ...[
+            Icon(icon, size: 18, color: Theme.of(context).colorScheme.onSurfaceVariant),
+            const SizedBox(width: 10),
+          ],
+          Expanded(
+            child: Text(
+              label,
+              style: const TextStyle(fontSize: 15),
+              overflow: TextOverflow.ellipsis,
+            ),
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'UGX ${_fmt(amount)}',
+            style: const TextStyle(fontWeight: FontWeight.bold),
+          ),
         ],
+      ),
+    );
+  }
+
+  Widget _sectionTitle(String text) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 12, bottom: 8),
+      child: Text(
+        text,
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
       ),
     );
   }
@@ -123,77 +76,177 @@ class ReceiptPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final total = visit.total;
-    final isClosed = visit.status == 'closed';
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('Receipt'),
-        actions: [
-          IconButton(
-            tooltip: 'Print / Save PDF',
-            icon: const Icon(Icons.print),
-            onPressed: () => _print(context),
-          ),
-        ],
       ),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 520),
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
-              Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(16),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+      body: ListView(
+        padding: const EdgeInsets.all(14),
+        children: [
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'DMA CLINIC',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
                     children: [
-                      const Center(
+                      const Icon(Icons.receipt_long, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
                         child: Text(
-                          'DMA Clinic',
-                          style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+                          'Visit ID: ${visit.visitId}',
+                          style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
                         ),
-                      ),
-                      const SizedBox(height: 4),
-                      Center(
-                        child: Text(
-                          isClosed ? 'RECEIPT (CLOSED)' : 'INVOICE (OPEN)',
-                          style: TextStyle(
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            color: isClosed ? Colors.green : Colors.orange,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(height: 14),
-
-                      _row('Patient', patient.fullName, bold: true),
-                      _row('Patient ID', patient.patientId),
-                      _row('Phone', patient.phone),
-                      _row('Visit Date', visit.visitDate),
-
-                      const Divider(height: 24),
-
-                      _row('Consultation', 'UGX ${visit.consultationFee}'),
-                      _row('Lab', 'UGX ${visit.labFee}'),
-                      _row('Pharmacy', 'UGX ${visit.pharmacyFee}'),
-                      _row('Procedures', 'UGX ${visit.proceduresFee}'),
-
-                      const Divider(height: 24),
-                      _row('TOTAL', 'UGX $total', bold: true),
-
-                      const SizedBox(height: 14),
-                      const Text(
-                        'Use the print button (top right) to print or save as PDF.',
-                        style: TextStyle(fontSize: 12),
                       ),
                     ],
                   ),
-                ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.calendar_month, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Date: ${visit.visitDate}',
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(999),
+                          color: visit.status == 'closed' ? Colors.grey.shade300 : Colors.green.shade100,
+                        ),
+                        child: Text(
+                          visit.status.toUpperCase(),
+                          style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const Divider(height: 22),
+                  Row(
+                    children: [
+                      const Icon(Icons.person, size: 18),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: Text(
+                          patient.fullName,
+                          style: const TextStyle(fontWeight: FontWeight.bold),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Row(
+                    children: [
+                      const Icon(Icons.badge, size: 18),
+                      const SizedBox(width: 8),
+                      Text(
+                        'Patient ID: ${patient.patientId}',
+                        style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
+            ),
           ),
-        ),
+
+          _sectionTitle('Charges'),
+
+          Card(
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                children: [
+                  _lineItem(
+                    context: context,
+                    label: 'Consultation',
+                    amount: visit.consultationFee,
+                    icon: Icons.medical_services,
+                    showIfZero: true,
+                  ),
+                  _lineItem(
+                    context: context,
+                    label: 'Laboratory',
+                    amount: visit.labFee,
+                    icon: Icons.science,
+                    showIfZero: true,
+                  ),
+                  _lineItem(
+                    context: context,
+                    label: 'Pharmacy',
+                    amount: visit.pharmacyFee,
+                    icon: Icons.local_pharmacy,
+                    showIfZero: true,
+                  ),
+
+                  // ✅ NEW
+                  _lineItem(
+                    context: context,
+                    label: 'Pharmacy (Other)',
+                    amount: visit.pharmacyFeeOther,
+                    icon: Icons.local_pharmacy_outlined,
+                    showIfZero: true,
+                  ),
+
+                  // ✅ NEW
+                  _lineItem(
+                    context: context,
+                    label: 'Inpatient',
+                    amount: visit.inpatientFee,
+                    icon: Icons.hotel,
+                    showIfZero: true,
+                  ),
+
+                  _lineItem(
+                    context: context,
+                    label: 'Procedures',
+                    amount: visit.proceduresFee,
+                    icon: Icons.healing,
+                    showIfZero: true,
+                  ),
+                  const Divider(height: 24),
+                  Row(
+                    children: [
+                      const Expanded(
+                        child: Text(
+                          'TOTAL',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w900),
+                        ),
+                      ),
+                      Text(
+                        'UGX ${_fmt(total)}',
+                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          const SizedBox(height: 12),
+
+          Card(
+            child: ListTile(
+              leading: const Icon(Icons.info_outline),
+              title: const Text('Thank you'),
+              subtitle: Text(
+                'Please keep this receipt for your records.',
+                style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }

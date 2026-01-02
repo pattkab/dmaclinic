@@ -78,35 +78,31 @@ class _LoginPageState extends State<LoginPage> {
 
   Widget _brandHeader() {
     final name = widget.settings.clinicName;
-    final logo = widget.settings.logoUrl.trim();
 
     return Column(
       children: [
-        if (logo.isNotEmpty)
-          ClipRRect(
-            borderRadius: BorderRadius.circular(18),
-            child: Image.network(
-              logo,
-              height: 84,
-              width: 84,
-              fit: BoxFit.contain,
-              errorBuilder: (_, __, ___) => const SizedBox(height: 84, width: 84),
-            ),
-          )
-        else
-          Container(
-            height: 84,
-            width: 84,
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(18),
-              color: Theme.of(context).colorScheme.primaryContainer,
-            ),
-            child: Icon(
-              Icons.local_hospital,
-              size: 46,
-              color: Theme.of(context).colorScheme.onPrimaryContainer,
+        ClipRRect(
+          borderRadius: BorderRadius.circular(18),
+          child: Image.asset(
+            'assets/dma_clinic.png',
+            height: 120,
+            width: 120,
+            fit: BoxFit.contain,
+            errorBuilder: (_, __, ___) => Container(
+              height: 120,
+              width: 120,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(18),
+                color: Theme.of(context).colorScheme.primaryContainer,
+              ),
+              child: Icon(
+                Icons.local_hospital,
+                size: 60,
+                color: Theme.of(context).colorScheme.onPrimaryContainer,
+              ),
             ),
           ),
+        ),
         const SizedBox(height: 12),
         Text(
           name,

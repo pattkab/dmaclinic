@@ -19,6 +19,16 @@ class _PatientSearchPageState extends State<PatientSearchPage> {
   List<Patient> _results = [];
 
   @override
+  void initState() {
+    super.initState();
+    _q.addListener(() {
+      if (mounted) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
   void dispose() {
     _q.dispose();
     super.dispose();
@@ -68,49 +78,55 @@ class _PatientSearchPageState extends State<PatientSearchPage> {
         padding: const EdgeInsets.all(12),
         children: [
           Card(
+            elevation: 2,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
             child: Padding(
-              padding: const EdgeInsets.all(12),
-              child: Column(
-                children: [
-                  TextField(
-                    controller: _q,
-                    textInputAction: TextInputAction.search,
-                    onSubmitted: (_) => _search(),
-                    decoration: InputDecoration(
-                      labelText: 'Search by Patient ID / Phone / Name',
-                      border: const OutlineInputBorder(),
-                      suffixIcon: IconButton(
-                        icon: const Icon(Icons.search),
-                        onPressed: _loading ? null : _search,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                  if (canRegister)
-                    SizedBox(
-                      width: double.infinity,
-                      child: OutlinedButton.icon(
-                        icon: const Icon(Icons.person_add),
-                        label: const Text('Register New Patient'),
-                        onPressed: () async {
-                          final created = await Navigator.push<Patient?>(
-                            context,
-                            MaterialPageRoute(builder: (_) => const PatientRegisterPage()),
-                          );
-                          if (created != null) {
-                            if (!mounted) return;
-                            await Navigator.push(
-                              context,
-                              MaterialPageRoute(builder: (_) => PatientProfilePage(patient: created, role: widget.role)),
-                            );
-                          }
-                        },
-                      ),
-                    ),
-                ],
+              padding: const EdgeInsets.symmetric(horizontal: 12),
+              child: TextField(
+                controller: _q,
+                textInputAction: TextInputAction.search,
+                onSubmitted: (_) => _search(),
+                decoration: InputDecoration(
+                  hintText: 'Search by Patient ID / Phone / Name',
+                  border: InputBorder.none,
+                  icon: const Icon(Icons.search),
+                  suffixIcon: _q.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear),
+                          onPressed: () {
+                            _q.clear();
+                            setState(() {
+                              _results = [];
+                            });
+                          },
+                        )
+                      : null,
+                ),
               ),
             ),
           ),
+          const SizedBox(height: 10),
+          if (canRegister)
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
+                icon: const Icon(Icons.person_add),
+                label: const Text('Register New Patient'),
+                onPressed: () async {
+                  final created = await Navigator.push<Patient?>(
+                    context,
+                    MaterialPageRoute(builder: (_) => const PatientRegisterPage()),
+                  );
+                  if (created != null) {
+                    if (!mounted) return;
+                    await Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => PatientProfilePage(patient: created, role: widget.role)),
+                    );
+                  }
+                },
+              ),
+            ),
           const SizedBox(height: 10),
           if (_loading) const Center(child: Padding(padding: EdgeInsets.all(20), child: CircularProgressIndicator())),
           if (!_loading && _results.isEmpty)
