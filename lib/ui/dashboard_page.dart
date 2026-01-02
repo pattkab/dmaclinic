@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
+import '../constants/app_constants.dart';
 import '../core/utils/date_utils.dart';
+import '../models/clinic_settings.dart';
 import '../services/auth_service.dart';
 import '../services/report_service.dart';
 import '../services/visit_service.dart';
@@ -10,10 +12,18 @@ import 'daily_report_page.dart';
 import 'trends_page.dart';
 import 'account_page.dart';
 import 'user_management_page.dart';
+import 'export_page.dart';
+import 'settings_page.dart';
 
 class DashboardPage extends StatefulWidget {
   final String role;
-  const DashboardPage({super.key, required this.role});
+  final ClinicSettings settings;
+
+  const DashboardPage({
+    super.key,
+    required this.role,
+    required this.settings,
+  });
 
   @override
   State<DashboardPage> createState() => _DashboardPageState();
@@ -27,9 +37,9 @@ class _DashboardPageState extends State<DashboardPage> {
   bool _loading = true;
   DailyReport? _today;
 
-  // ✅ bool GETTERS (not functions) so `if (_canManageUsers)` works
   bool get _canCloseAll => widget.role == 'admin' || widget.role == 'reception';
   bool get _canManageUsers => widget.role == 'ceo' || widget.role == 'admin';
+  bool get _canEditSettings => widget.role == 'ceo' || widget.role == 'admin';
 
   @override
   void initState() {
@@ -116,19 +126,80 @@ class _DashboardPageState extends State<DashboardPage> {
     }
   }
 
-  Widget _statCard(String title, String value) {
+  Widget _statCard(String title, String value, IconData icon) {
     return Card(
       child: Padding(
         padding: const EdgeInsets.all(14),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+        child: Row(
           children: [
-            Text(title, style: const TextStyle(fontSize: 12)),
-            const SizedBox(height: 8),
-            Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+            Container(
+              height: 44,
+              width: 44,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(14),
+                color: Theme.of(context).colorScheme.primaryContainer,
+              ),
+              child: Icon(icon, color: Theme.of(context).colorScheme.onPrimaryContainer),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(title, style: const TextStyle(fontSize: 12)),
+                  const SizedBox(height: 6),
+                  Text(value, style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                ],
+              ),
+            ),
           ],
         ),
       ),
+    );
+  }
+
+  Widget _brandRow() {
+    final logo = widget.settings.logoUrl.trim();
+    return Row(
+      children: [
+        if (logo.isNotEmpty)
+          ClipRRect(
+            borderRadius: BorderRadius.circular(12),
+            child: Image.network(
+              logo,
+              height: 34,
+              width: 34,
+              fit: BoxFit.contain,
+              errorBuilder: (_, __, ___) => const SizedBox(height: 34, width: 34),
+            ),
+          )
+        else
+          Container(
+            height: 34,
+            width: 34,
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(12),
+              color: Theme.of(context).colorScheme.primaryContainer,
+            ),
+            child: Icon(
+              Icons.local_hospital,
+              size: 20,
+              color: Theme.of(context).colorScheme.onPrimaryContainer,
+            ),
+          ),
+        const SizedBox(width: 10),
+        Expanded(
+          child: Text(
+            widget.settings.clinicName,
+            style: const TextStyle(fontWeight: FontWeight.w800),
+            overflow: TextOverflow.ellipsis,
+          ),
+        ),
+        Text(
+          AppConstants.versionLabel,
+          style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+        ),
+      ],
     );
   }
 
@@ -140,6 +211,21 @@ class _DashboardPageState extends State<DashboardPage> {
       appBar: AppBar(
         title: Text('Dashboard • $todayKey'),
         actions: [
+          IconButton(
+            tooltip: 'Backup/Export',
+            icon: const Icon(Icons.download),
+            onPressed: () async {
+              await Navigator.push(context, MaterialPageRoute(builder: (_) => const ExportPage()));
+            },
+          ),
+          if (_canEditSettings)
+            IconButton(
+              tooltip: 'Clinic Settings',
+              icon: const Icon(Icons.settings),
+              onPressed: () async {
+                await Navigator.push(context, MaterialPageRoute(builder: (_) => const SettingsPage()));
+              },
+            ),
           if (_canManageUsers)
             IconButton(
               tooltip: 'Users',
@@ -147,9 +233,7 @@ class _DashboardPageState extends State<DashboardPage> {
               onPressed: () async {
                 await Navigator.push(
                   context,
-                  MaterialPageRoute(
-                    builder: (_) => UserManagementPage(currentRole: widget.role),
-                  ),
+                  MaterialPageRoute(builder: (_) => UserManagementPage(currentRole: widget.role)),
                 );
               },
             ),
@@ -157,10 +241,7 @@ class _DashboardPageState extends State<DashboardPage> {
             tooltip: 'Account',
             icon: const Icon(Icons.person),
             onPressed: () async {
-              await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (_) => AccountPage(role: widget.role)),
-              );
+              await Navigator.push(context, MaterialPageRoute(builder: (_) => AccountPage(role: widget.role)));
             },
           ),
           IconButton(
@@ -183,28 +264,45 @@ class _DashboardPageState extends State<DashboardPage> {
           padding: const EdgeInsets.all(12),
           children: [
             Card(
-              child: ListTile(
-                title: Text('Signed in role: ${widget.role}'),
-                subtitle: const Text('Search patients, open today visit, update fees, then close out the day.'),
-                trailing: const Icon(Icons.verified_user),
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _brandRow(),
+                    const SizedBox(height: 10),
+                    Text(
+                      'Signed in role: ${widget.role}',
+                      style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Developer: ${AppConstants.developer}',
+                      style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onSurfaceVariant),
+                    ),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 10),
+
             Wrap(
               runSpacing: 10,
               spacing: 10,
               children: [
-                SizedBox(width: 220, child: _statCard('Patients seen', '${_today!.patientsSeen}')),
-                SizedBox(width: 220, child: _statCard('New patients', '${_today!.newPatients}')),
-                SizedBox(width: 220, child: _statCard('Old patients', '${_today!.oldPatients}')),
-                SizedBox(width: 220, child: _statCard('Consultation', '${_today!.consultationTotal}')),
-                SizedBox(width: 220, child: _statCard('Lab', '${_today!.labTotal}')),
-                SizedBox(width: 220, child: _statCard('Pharmacy', '${_today!.pharmacyTotal}')),
-                SizedBox(width: 220, child: _statCard('Procedures', '${_today!.proceduresTotal}')),
-                SizedBox(width: 220, child: _statCard('Grand total', '${_today!.grandTotal}')),
+                SizedBox(width: 260, child: _statCard('Patients seen', '${_today!.patientsSeen}', Icons.groups)),
+                SizedBox(width: 260, child: _statCard('New patients', '${_today!.newPatients}', Icons.person_add)),
+                SizedBox(width: 260, child: _statCard('Old patients', '${_today!.oldPatients}', Icons.history)),
+                SizedBox(width: 260, child: _statCard('Consultation', '${_today!.consultationTotal}', Icons.medical_services)),
+                SizedBox(width: 260, child: _statCard('Lab', '${_today!.labTotal}', Icons.science)),
+                SizedBox(width: 260, child: _statCard('Pharmacy', '${_today!.pharmacyTotal}', Icons.local_pharmacy)),
+                SizedBox(width: 260, child: _statCard('Procedures', '${_today!.proceduresTotal}', Icons.healing)),
+                SizedBox(width: 260, child: _statCard('Grand total', '${_today!.grandTotal}', Icons.payments)),
               ],
             ),
+
             const SizedBox(height: 12),
+
             Row(
               children: [
                 Expanded(
@@ -226,10 +324,7 @@ class _DashboardPageState extends State<DashboardPage> {
                     icon: const Icon(Icons.analytics),
                     label: const Text('Daily Report'),
                     onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const DailyReportPage()),
-                      );
+                      await Navigator.push(context, MaterialPageRoute(builder: (_) => const DailyReportPage()));
                       _loadToday();
                     },
                   ),
@@ -240,16 +335,15 @@ class _DashboardPageState extends State<DashboardPage> {
                     icon: const Icon(Icons.show_chart),
                     label: const Text('Trends'),
                     onPressed: () async {
-                      await Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (_) => const TrendsPage()),
-                      );
+                      await Navigator.push(context, MaterialPageRoute(builder: (_) => const TrendsPage()));
                     },
                   ),
                 ),
               ],
             ),
+
             const SizedBox(height: 12),
+
             if (_canCloseAll)
               SizedBox(
                 width: double.infinity,
@@ -259,7 +353,9 @@ class _DashboardPageState extends State<DashboardPage> {
                   onPressed: _closeAllOpenToday,
                 ),
               ),
+
             if (_canCloseAll) const SizedBox(height: 8),
+
             if (_canCloseAll)
               Card(
                 child: Padding(

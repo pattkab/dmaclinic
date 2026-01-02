@@ -5,6 +5,9 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'firebase_options.dart';
 import 'services/auth_service.dart';
+import 'services/settings_service.dart';
+import 'models/clinic_settings.dart';
+
 import 'ui/login_page.dart';
 import 'ui/dashboard_page.dart';
 
@@ -17,22 +20,75 @@ void main() async {
 class DmaClinicApp extends StatelessWidget {
   const DmaClinicApp({super.key});
 
+  ThemeData _theme() {
+    final scheme = ColorScheme.fromSeed(
+      seedColor: Colors.teal,
+      brightness: Brightness.light,
+    );
+
+    return ThemeData(
+      useMaterial3: true,
+      colorScheme: scheme,
+      scaffoldBackgroundColor: scheme.surface,
+
+      // ✅ FIX: CardThemeData (not CardTheme)
+      cardTheme: CardThemeData(
+        elevation: 1.5,
+        surfaceTintColor: scheme.surfaceTint,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(18)),
+      ),
+
+      inputDecorationTheme: InputDecorationTheme(
+        filled: true,
+        fillColor: scheme.surfaceContainerHighest.withOpacity(0.45),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
+      ),
+
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      ),
+
+      outlinedButtonTheme: OutlinedButtonThemeData(
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+        ),
+      ),
+
+      appBarTheme: AppBarTheme(
+        centerTitle: false,
+        backgroundColor: scheme.surface,
+        surfaceTintColor: scheme.surfaceTint,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'DMA Clinic',
-      debugShowCheckedModeBanner: false,
-      theme: ThemeData(
-        useMaterial3: true,
-        colorSchemeSeed: Colors.teal,
-      ),
-      home: const AuthGate(),
+    final settingsSvc = SettingsService();
+
+    return StreamBuilder<ClinicSettings>(
+      stream: settingsSvc.streamSettings(),
+      builder: (context, snap) {
+        final settings = snap.data ?? ClinicSettings.defaults();
+
+        return MaterialApp(
+          title: settings.clinicName,
+          debugShowCheckedModeBanner: false,
+          theme: _theme(),
+          home: AuthGate(settings: settings),
+        );
+      },
     );
   }
 }
 
 class AuthGate extends StatelessWidget {
-  const AuthGate({super.key});
+  final ClinicSettings settings;
+  const AuthGate({super.key, required this.settings});
 
   @override
   Widget build(BuildContext context) {
@@ -47,7 +103,7 @@ class AuthGate extends StatelessWidget {
           return const Scaffold(body: Center(child: CircularProgressIndicator()));
         }
 
-        if (user == null) return const LoginPage();
+        if (user == null) return LoginPage(settings: settings);
 
         return StreamBuilder<DocumentSnapshot<Map<String, dynamic>>>(
           stream: FirebaseFirestore.instance.collection('users').doc(user.uid).snapshots(),
@@ -58,7 +114,7 @@ class AuthGate extends StatelessWidget {
 
             if (roleSnap.hasError) {
               return Scaffold(
-                appBar: AppBar(title: const Text('DMA Clinic')),
+                appBar: AppBar(title: Text(settings.clinicName)),
                 body: Center(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -76,7 +132,7 @@ class AuthGate extends StatelessWidget {
             final data = roleSnap.data?.data();
             if (data == null) {
               return Scaffold(
-                appBar: AppBar(title: const Text('DMA Clinic')),
+                appBar: AppBar(title: Text(settings.clinicName)),
                 body: Center(
                   child: Padding(
                     padding: const EdgeInsets.all(16),
@@ -96,7 +152,7 @@ class AuthGate extends StatelessWidget {
             // ✅ Active enforcement
             if (!active) {
               return Scaffold(
-                appBar: AppBar(title: const Text('DMA Clinic')),
+                appBar: AppBar(title: Text(settings.clinicName)),
                 body: Center(
                   child: ConstrainedBox(
                     constraints: const BoxConstraints(maxWidth: 520),
@@ -124,9 +180,7 @@ class AuthGate extends StatelessWidget {
                               FilledButton.icon(
                                 icon: const Icon(Icons.logout),
                                 label: const Text('Logout'),
-                                onPressed: () async {
-                                  await auth.signOut();
-                                },
+                                onPressed: () async => auth.signOut(),
                               ),
                             ],
                           ),
@@ -138,7 +192,7 @@ class AuthGate extends StatelessWidget {
               );
             }
 
-            return DashboardPage(role: role);
+            return DashboardPage(role: role, settings: settings);
           },
         );
       },
